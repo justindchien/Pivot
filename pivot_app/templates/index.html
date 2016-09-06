@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Prediction Wizard</title>
+    <link rel="stylesheet" href="static/d3.slider.css" />
+    <style>
+
+     body {
+       font-family: Verdana,Arial,sans-serif;
+     }
+
+     h2 {
+       font-size: 1.2em;
+       margin: 60px 0 5px 0;
+       text-align: center;
+       color: gray;
+     }
+
+     .space {
+       margin-bottom: 20 px;
+     }
+
+     .score {
+       font-size: 2em;
+       margin: 60px 0 5px 0;
+       text-align: center;
+       color: gray;
+     }
+
+     .scoreVal {
+       font-size: 3em;
+       margin: 60px 0 5px 0;
+       text-align: center;
+       color: green;
+     }
+     
+     .wrapper {
+       width: 800px;
+       margin-left: auto;
+       margin-right: auto;
+       margin-bottom: 0px;
+
+     }
+
+     .feature {
+       color: grey;
+     }
+
+     #tier {
+        color: steelblue;
+     }
+     #funding {
+        color: steelblue;
+     }
+     #fundingCount {
+        color: steelblue;
+     }
+     #firstInv {
+        color: steelblue;
+     }
+     #fundingPeriod {
+        color: steelblue;
+     }
+
+      .chart rect {
+        fill: steelblue;
+      }
+
+      .chart text {
+        fill: white;
+        font: 10px sans-serif;
+        text-anchor: end;
+      }
+
+      .legend text{
+        fill: black;
+        font: 10px sans-serif;
+      }
+
+
+    </style>
+  </head>
+
+  <body>
+
+<!--     <div id="chart_area" class="wrapper">
+      <h2>Prediction</h2>
+      <p class="space"></p>
+      </div>
+    </div>
+ -->
+    <h2 class="score" >Score:</h2>
+    <h2 class="scoreVal" ><span id="scoreID">0</span></h2>
+
+    <svg class = "button_spacer"></svg>
+    <button class="separate_bar">Separate</button>
+    <button class="stacked_bar">Stacked</button>
+    <br><br>
+
+    <svg></svg>
+    <svg class="chart"></svg>
+    <svg class="legend"></svg>
+
+    <div id="sliders" class="wrapper">
+
+      <h2 class="feature">Funding received: <span id="funding">$500,000,000</span></h2>
+      <div id="funding_slider"></div>
+      
+      <h2 class="feature">Funding Rounds: <span id="fundingCount">1</span></h2>
+      <div id="fundingCount_slider"></div>
+
+      <h2 class="feature">Days from founding to first investment: <span id="firstInv">100 days</span></h2>
+      <div id="firstInv_slider"></div>
+
+      <h2 class="feature">Total funding period: <span id = "fundingPeriod"> 365 </span></h2>
+      <div id="fundingPeriod_slider"></div>
+
+      <h2 class="feature">Investor tier: <span id="tier">1</span></h2>
+      <div id="tier_slider"></div>
+      
+    </div>
+
+    <!-- Import the libraries: jQuery, d3, d3.slider -->
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="static/d3.slider.js"></script>
+
+    <!-- <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script> -->
+    <script>
+    var data = [25, 35, 18, 22];
+    var labels = ['IPO', 'Acquired', 'Open', 'Fail'];
+
+    var curr_view = 'separate';
+
+    var color = d3.scale.ordinal()
+      .range(["#5181c2", "#6ca874", "#e0b84f", "#c2493d"]);
+
+    var width = 500,
+        height = 40;
+
+    var x_scale = d3.scale.linear()
+        .domain([0, d3.max(data)])
+        .range([0, width]);
+
+    var curr_tier = 1;
+    var curr_funding = 500000000;
+    var curr_fundingCount = 1;
+    var curr_firstInv = 100;
+    var curr_fundingPeriod = 365;
+    var current_goodness = 50.0;
+
+
+    d3.select('#tier_slider')
+      .call(
+      d3.slider()
+      .value(curr_tier)
+      .min(1)
+      .max(5)
+      .step(1)
+      .axis(true)
+      .on("slide", function(evt,value) {
+      d3.select('#tier').text(value);
+      curr_tier = value;
+      getAndDrawPred(curr_tier, curr_funding, curr_fundingCount, curr_firstInv, curr_fundingPeriod)
+      }
+      )
+      );
+
+    d3.select('#funding_slider')
+          .call(
+          d3.slider()
+          .value(curr_funding)
+          .min(0)
+          .max(500000000)
+          .step(50000)
+          .axis(true)
+          .on("slide", function(evt,value) {
+              d3.select('#funding').text("$" + value);
+              curr_funding = value;
+              getAndDrawPred(curr_tier, curr_funding, curr_fundingCount, curr_firstInv, curr_fundingPeriod)
+              }
+          )
+      );
+
+    d3.select('#fundingCount_slider')
+          .call(
+          d3.slider()
+          .value(curr_fundingCount)
+          .min(0)
+          .max(20)
+          .step(1)
+          .axis(true)
+          .on("slide", function(evt,value) {
+              d3.select('#fundingCount').text(value);
+              curr_fundingCount = value;
+              getAndDrawPred(curr_tier, curr_funding, curr_fundingCount, curr_firstInv, curr_fundingPeriod)
+              }
+          )
+      );
+
+    d3.select('#firstInv_slider')
+          .call(
+          d3.slider()
+          .value(curr_firstInv)
+          .min(-365)
+          .max(365)
+          .step(5)
+          .axis(true)
+          .on("slide", function(evt,value) {
+              d3.select('#firstInv').text(value + " days");
+              curr_firstInv = value;
+              getAndDrawPred(curr_tier, curr_funding, curr_fundingCount, curr_firstInv, curr_fundingPeriod)
+              }
+          )
+      );
+
+    d3.select('#fundingPeriod_slider')
+      .call(
+      d3.slider()
+      .value(curr_fundingPeriod)
+      .max(1000)
+      .step(5)
+      .axis(true)
+      .on("slide", function(evt,value) {
+      d3.select('#fundingPeriod').text(value  + " days");
+      curr_fundingPeriod = value ;
+      getAndDrawPred(curr_tier, curr_funding, curr_fundingCount, curr_firstInv, curr_fundingPeriod)
+      }
+      )
+    );
+
+    d3.select(".button_spacer")
+      .attr("width", 300)
+      .attr("height", 1);
+
+function print_score(data){
+    d3.select('#scoreID').text(data);
+}
+
+function draw_separate(data){
+
+  var chart = d3.select(".chart")
+      .attr("width", width)
+      .attr("height", height * data.length)
+      .attr("align", "center")
+
+  //Rectangles
+  var bar = chart.selectAll("rect")
+        .data(data)
+      .enter().append("rect")
+      .style("fill", function(d) { return color(d); });
+
+      chart.selectAll("rect")
+        .transition()
+        .duration(500).delay(function (d, i) { return i*100} )
+        .attr("width", function(d) { return d*5 })
+        .attr("height", height - 1)
+        .attr("y", function(d, i) {return height*i} )
+        .transition()
+        .duration(400).ease("bounce")
+        .attr("x", 0)
+
+  //Text on the rectangles
+      chart.selectAll("text")
+          .data(data)
+        .enter().append("text")
+
+      chart.selectAll("text")
+        .transition()
+        .duration(500).delay(function (d, i) { return i*100} )
+        .attr("y", function(d, i) {return height*i + 20})
+        .attr("dy", ".35em")
+        .transition()
+        .duration(400).ease("bounce")
+        .attr("x", function(d) {return d*5-3; })
+        .text(function(d) {return d + "%";});
+
+  //Creating Legend
+      var legend = d3.select(".legend")
+          .attr("width", width/2)
+          .attr("height", height * data.length)
+
+      //squares
+      var square = legend.selectAll("rect")
+            .data(labels)
+            .enter().append("rect")
+            .style("fill", function(d) {return color(d); });
+
+      legend.selectAll("rect")
+        .attr("class", "square")
+        .attr("x", 10)
+        .attr("y", function(d,i){return 20 * i})
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", function(d) {return color(d); });
+
+      //labels
+      legend.selectAll("text")
+            .data(labels)
+          .enter().append("text")
+        .attr("x", 35)
+        .attr("y", function(d,i){return 20 * i + 9})
+        .attr("dy", ".35em")
+        .text(function(d) {return d});
+}
+
+
+    function draw_stacked(data){
+
+          var chart = d3.select(".chart")
+              .attr("width", width)
+              .attr("height", height * data.length)
+
+          var bar = chart.selectAll("rect")
+              .data(data)
+              .enter().append("rect")
+              .style("fill", function(d) { return color(d); });
+
+
+          chart.selectAll("rect")
+            .transition()
+            .duration(500).delay(function (d, i) {return i*100} )
+            .attr("width", function(d) { return d*5 })
+            .attr("height", height - 1)
+            .attr("x", function(d, i) {
+                              return (typeof data[i-1] !== 'undefined') ? (data.slice(0,i).reduce(function(a,b) { return a + b}, 0))*5 : 0 } )
+            .transition()
+            .duration(400).ease("bounce")
+            .attr("y", 1)
+
+          chart.selectAll("text")
+              .data(data)
+            .enter().append("text")
+
+          chart.selectAll("text")
+            .transition()
+            .duration(500).delay(function (d, i) { return i*100} )
+            .attr("x", function(d, i) {
+                              return (typeof data[i-1] !== 'undefined') ? (data.slice(0,i+1).reduce(function(a,b) { return a + b}, 0))*5 - 3 : data[0] * 5 -3 } )
+            .transition()
+            .duration(400).ease("bounce")
+            .attr("y", 20)
+            .attr("dy", ".35em")
+            .text(function(d) {return d + "%";});
+
+    }
+
+    draw_separate(data)
+    var update = data;
+
+    function getAndDrawPred(tier, funding, funding_Count, firstInv, fundingPeriod){
+        // Hard code one set lol update with actual values
+
+        var tier_1 = 0 ;
+        var tier_2 = 0 ;
+        var tier_3 = 0 ;
+        var tier_4 = 0 ;
+        var tier_5 = 0 ;
+
+        if (tier == 1){
+            tier_1 = 1
+          }
+        else if (tier==2){
+          tier_2 = 1
+        }
+        else if (tier==3){
+          tier_3 = 1
+        }
+        else if (tier==4){
+          tier_4 = 1
+        }
+        else{
+          tier_5 = 1
+        } ;
+
+        var data  = JSON.stringify({
+          example:   {'funding_total_usd' : funding,
+                      'funding_rounds' : funding_Count,
+                      'daysToFirstFunding' : firstInv,
+                      'daysBetweenFirstLastFunding' : fundingPeriod,
+                      'tier_1' : tier_1,
+                      'tier_2' : tier_2,
+                      'tier_3' : tier_3,
+                      'tier_4' : tier_4,
+                      'tier_5' : tier_5,
+                      'numberOfRatings' : 114,
+                      'overallRating' : 3.2,
+                      'compensationAndBenefitsRating' : 3.2,
+                      'careerOpportunitiesRating' : 3,
+                      'recommendToFriendRating' : 0.6,
+                      'cultureAndValuesRating' : 3.2,
+                      'workLifeBalanceRating' : 3.2,
+                      'seniorLeadershipRating' : 2.8,
+                      'ceonumratings' : 4376,
+                      'ceopctapprove' : 74,
+                      'Advertising' : 0,
+                      'Analytics' : 0,
+                      'Android' : 0,
+                      'Apps' : 0,
+                      'Automotive' : 0,
+                      'B2B' : 0,
+                      'Big Data' : 0,
+                      'Big Data Analytics' : 0,
+                      'Biotechnology' : 0,
+                      'Brand Marketing' : 0,
+                      'Business Intelligence' : 0,
+                      'Business Services' : 0,
+                      'CRM' : 0,
+                      'Clean Technology' : 0,
+                      'Cloud Computing' : 0,
+                      'Collaboration' : 0,
+                      'Consulting' : 0,
+                      'Consumer Electronics' : 0,
+                      'Consumer Goods' : 0,
+                      'Content' : 0,
+                      'Crowdsourcing' : 0,
+                      'Curated Web' : 0,
+                      'Databases' : 0,
+                      'Design' : 0,
+                      'Digital Media' : 0,
+                      'E-Commerce' : 0,
+                      'EdTech' : 0,
+                      'Education' : 0,
+                      'Energy' : 0,
+                      'Enterprise Software' : 0,
+                      'Enterprises' : 0,
+                      'Entertainment' : 0,
+                      'Events' : 0,
+                      'Fashion' : 0,
+                      'FinTech' : 0,
+                      'Finance' : 0,
+                      'Financial Services' : 0,
+                      'Fitness' : 0,
+                      'Games' : 0,
+                      'Hardware' : 0,
+                      'Hardware + Software' : 0,
+                      'Health Care' : 0,
+                      'Health Care Information Technology' : 0,
+                      'Health Diagnostics' : 0,
+                      'Health and Wellness' : 0,
+                      'Hospitality' : 0,
+                      'Human Resources' : 0,
+                      'Information Technology' : 0,
+                      'Internet' : 0,
+                      'Internet Marketing' : 0,
+                      'Internet of Things' : 0,
+                      'Local' : 0,
+                      'Location Based Services' : 0,
+                      'Manufacturing' : 0,
+                      'Marketing Automation' : 0,
+                      'Marketplaces' : 0,
+                      'Media' : 0,
+                      'Medical' : 0,
+                      'Medical Devices' : 0,
+                      'Messaging' : 0,
+                      'Mobile' : 0,
+                      'Mobile Commerce' : 0,
+                      'Music' : 0,
+                      'Networking' : 0,
+                      'News' : 0,
+                      'Nonprofits' : 0,
+                      'Payments' : 0,
+                      'Pharmaceuticals' : 0,
+                      'Photography' : 0,
+                      'Public Relations' : 0,
+                      'Publishing' : 0,
+                      'Real Estate' : 0,
+                      'Real Time' : 0,
+                      'Recruiting' : 0,
+                      'Restaurants' : 0,
+                      'Retail' : 0,
+                      'Reviews and Recommendations' : 0,
+                      'SaaS' : 0,
+                      'Sales and Marketing' : 0,
+                      'Search' : 0,
+                      'Security' : 0,
+                      'Semiconductors' : 0,
+                      'Services' : 0,
+                      'Social Commerce' : 0,
+                      'Social Media' : 0,
+                      'Social Network Media' : 0,
+                      'Software' : 0,
+                      'Sports' : 0,
+                      'Startups' : 0,
+                      'Technology' : 0,
+                      'Telecommunications' : 0,
+                      'Transportation' : 0,
+                      'Travel' : 0,
+                      'Video' : 0,
+                      'Video Streaming' : 0,
+                      'Web Development' : 0,
+                      'Web Hosting' : 0,
+                      'Wireless' : 0,
+                      'iOS' : 0,
+                      'iPhone' : 0}
+
+        });
+
+        $.ajax({
+          type: "POST",
+          contentType: "application/json; charset=utf-8",
+          url: "/score/",
+          dataType: "json",
+          async: true,
+          data: data,
+          success: function (data) {
+
+            var oper = 100 * data["oper"];
+              oper = Math.round(oper * 100) / 100;
+            var close = 100 * data["close"];
+              close = Math.round(close * 100) / 100;
+            var acq = 100 * data["acq"];
+              acq = Math.round(acq * 100) / 100;
+            var ipo = 100 * data["ipo"];
+              ipo = Math.round(ipo * 100) / 100;
+
+            var scoreVal = data["close"]*20 + data["oper"]*40 + data["acq"]*70 + data["ipo"]*100 ;
+            scoreVal = Math.round(scoreVal * 100) / 100;
+            print_score(scoreVal);
+
+            update= [ipo,acq,oper,close];
+            curr_view=='separate' ? draw_separate(update):draw_stacked(update);
+            },
+          error: function (result) {
+          }
+        })
+    }
+
+    //What happens on click
+    d3.select("button.separate_bar")
+      .on("click", function() {
+        curr_view = 'separate';
+        draw_separate(update);
+    });
+    d3.select("button.stacked_bar")
+      .on("click", function() {
+        curr_view = "stacked";
+        draw_stacked(update);
+    });
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.states {
+  fill: #ccc;
+  stroke: #fff;
+  fill-opacity: .2;
+}
+
+.c_blue {
+  fill: steelblue;
+  fill-opacity: .3;
+  stroke: #fff;
+}
+
+.c_orange {
+  fill: orange;
+  fill-opacity: .3;
+  stroke: #fff;
+}
+
+.c_red {
+  fill: red;
+  fill-opacity: .3;
+  stroke: #fff;
+}
+
+.c_green {
+  fill: green;
+  fill-opacity: .3;
+  stroke: #fff;
+}
+
+.c_blueviolet {
+  fill: blueviolet
+  fill-opacity: .3;
+  stroke: #fff;
+}
+
+.c_darkturquoise {
+  fill: darkturquoise;
+  fill-opacity: .3;
+  stroke: #fff;
+}
+
+
+</style>
+<body>
+<button id="total">Total Startups</button>
+<button id="op">Operating</button>
+<button id="acqu">Acquired</button>
+<button id="close">No Longer Operating</button>
+<button id="ipo">IPO</button>
+<button id="alldata">Show All</button>
+<button id="erase">Erase</button>
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="https://d3js.org/queue.v1.min.js"></script>
+<script src="https://d3js.org/d3-array.v1.min.js"></script>
+<script src="https://d3js.org/d3-collection.v1.min.js"></script>
+<script src="https://d3js.org/d3-color.v1.min.js"></script>
+<script src="https://d3js.org/d3-format.v1.min.js"></script>
+<script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+<script src="https://d3js.org/d3-time.v1.min.js"></script>
+<script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+<script src="https://d3js.org/d3-scale.v1.min.js"></script>
+<script>
+
+function drawany(us, data, active_color, pathinput) {
+    var path = pathinput;
+    svg.append("path")
+      .attr("class", "states")
+      .datum(topojson.feature(us, us.objects.states))
+      .attr("d", path);
+
+  svg.selectAll("path.symbol")
+      .data(data.features.sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("path")
+      .classed("symbol", true)
+
+  svg.selectAll("path.symbol")
+      .classed("c_orange", false)
+      .classed("c_blue", false)
+      .classed("c_green", false)
+      .classed("c_red", false)
+      .classed("c_blueviolet", false)
+      .classed("c_darkturquoise", false)
+      .classed(active_color, true)
+      .attr("d", path.pointRadius(function(d) { return radius(d.properties.population); }));
+}
+
+function eraseall() {
+    
+  svg.selectAll("path.symbol")
+      .classed("c_orange", false)
+      .classed("c_blue", false)
+      .classed("c_green", false)
+      .classed("c_red", false)
+      .classed("c_blueviolet", false)
+      .classed("c_darkturquoise", false)
+}
+
+function draworange(us,data) {
+    svg.append("path")
+      .attr("class", "states")
+      .datum(topojson.feature(us, us.objects.states))
+      .attr("d", path1);
+
+  svg.selectAll(".c_orange", "circles")
+      .data(data.features.sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("path")
+      .attr("class", "c_orange", "circles")
+      .attr("d", path1.pointRadius(function(d) { return radius(d.properties.population); }));
+}
+
+function drawgreen(us,data) {
+    svg.append("path")
+      .attr("class", "states")
+      .datum(topojson.feature(us, us.objects.states))
+      .attr("d", path2);
+
+  svg.selectAll(".c_green")
+      .data(data.features.sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("path")
+      .attr("class", "c_green")
+      .attr("d", path2.pointRadius(function(d) { return radius(d.properties.population); }));
+}
+
+function drawblue(us,data) {
+    svg.append("path")
+      .attr("class", "states")
+      .datum(topojson.feature(us, us.objects.states))
+      .attr("d", path3);
+
+  svg.selectAll(".c_blue")
+      .data(data.features.sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("path")
+      .attr("class", "c_blue")
+      .attr("d", path3.pointRadius(function(d) { return radius(d.properties.population); }));
+}
+
+function drawred(us,data) {
+    svg.append("path")
+      .attr("class", "states")
+      .datum(topojson.feature(us, us.objects.states))
+      .attr("d", path4);
+
+  svg.selectAll(".c_red")
+      .data(data.features.sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("path")
+      .attr("class", "c_red")
+      .attr("d", path4.pointRadius(function(d) { return radius(d.properties.population); }));
+}
+
+function drawdarkturquoise(us,data) {
+    svg.append("path")
+      .attr("class", "states")
+      .datum(topojson.feature(us, us.objects.states))
+      .attr("d", path5);
+
+  svg.selectAll(".c_darkturquoise")
+      .data(data.features.sort(function(a, b) { return b.properties.population - a.properties.population; }))
+    .enter().append("path")
+      .attr("class", "c_darkturquoise")
+      .attr("d", path5.pointRadius(function(d) { return radius(d.properties.population); }));
+}
+
+var width = 960,
+    height = 500;
+
+//console.log(d3.scale)
+var radius = d3.scale.sqrt()
+    .domain([0, 100])
+    .range([0, 10]);
+
+//var path = d3.geo.path();
+var path1 = d3.geo.path();
+var path2 = d3.geo.path();
+var path3 = d3.geo.path();
+var path4 = d3.geo.path();
+var path5 = d3.geo.path();
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+queue()
+    .defer(d3.json, "us.json")
+    .defer(d3.json, "acquiredcounts.json")
+    .defer(d3.json, "closedcounts.json")
+    .defer(d3.json, "ipocounts.json")
+    .defer(d3.json, "operatingcounts.json")
+    .defer(d3.json, "statecounts.json")
+    .await(ready);
+
+var us, acquired, closed, ipo, operating, state;
+
+function ready(error, us, acquired, closed, ipo, operating, state) {
+  if (error) throw error;
+
+  d3.select("#total")
+    .on("click", function() {
+      drawred(us,state)
+  });
+
+  d3.select("#op")
+    .on("click", function() {
+      drawgreen(us,operating)
+  });
+
+  d3.select("#acqu")
+    .on("click", function() {
+      draworange(us,acquired)
+  });
+
+
+  d3.select("#close")
+    .on("click", function() {
+      drawblue(us,closed)
+  });
+
+  d3.select("#ipo")
+    .on("click", function() {
+      drawdarkturquoise(us,ipo)
+  });
+
+  d3.select("#alldata")
+    .on("click", function() {
+      drawred(us,state)
+      drawgreen(us,operating)
+      draworange(us,acquired)
+      drawblue(us,closed)
+      drawdarkturquoise(us,ipo)
+  });
+
+  d3.select("#erase")
+    .on("click", function() {
+      svg.selectAll("*").remove();
+      eraseall()
+  });
+
+
+}
+
+
+
+</script>
