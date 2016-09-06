@@ -1,4 +1,4 @@
-# Project: McNulty
+# Project McNulty
 
 **Group 1:**
 
