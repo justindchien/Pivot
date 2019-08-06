@@ -1,6 +1,4 @@
-# Project McNulty
-
-**Group 1:**
+## Joint project by
 
 * Justin Chien (@justindchien)
 * Deepak "James" Gautam (@jamesdeepak)
